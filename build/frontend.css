@@ -1,0 +1,238 @@
+/* ── Enroute Blocks Frontend CSS ─────────────────────────────────────────── */
+
+.ebl-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    max-width: 1350px;
+    margin: 0 auto;
+}
+@media (max-width: 900px) { .ebl-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .ebl-grid { grid-template-columns: 1fr; } }
+
+.ebl-span2 { grid-column: span 2; }
+@media (max-width: 600px) { .ebl-span2 { grid-column: span 1; } }
+
+/* ── Standard card (offer / blog / guide) ─────────────────────────────────── */
+.ebl-card {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+}
+.ebl-card:hover { text-decoration: none; }
+
+/* Image box */
+.ebl-img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 434 / 280;
+    overflow: hidden;
+    background: #c2dcef;
+    position: relative;
+    flex-shrink: 0;
+}
+.ebl-img img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+
+/* Band */
+.ebl-band {
+    display: block;
+    padding: 0.75rem 1rem 1rem;
+    flex: 1;
+}
+.ebl-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: rgba(0,0,0,0.6);
+    font-family: Montserrat, sans-serif;
+    line-height: 1.4;
+    margin: 0;
+    text-decoration: none;
+}
+.ebl-title {
+    display: block;
+    margin: 0;
+    padding-top: 12px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.25;
+    color: #111827;
+    font-family: Montserrat, sans-serif;
+    text-decoration: none;
+}
+.ebl-subtitle {
+    display: block;
+    margin: 0;
+    padding-top: 8px;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    color: #1f2937;
+    font-family: Montserrat, sans-serif;
+    text-decoration: none;
+}
+
+/* Remove underline from ALL links inside the grid */
+.ebl-grid a,
+.ebl-grid a:hover,
+.ebl-grid a:visited {
+    text-decoration: none;
+}
+
+/* ── Custom wide card ────────────────────────────────────────────────────── */
+.ebl-card--custom {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+.ebl-custom-img {
+    flex: 0 0 50%;
+    width: 50%;
+    overflow: hidden;
+    background: #e5e7eb;
+    position: relative;
+}
+.ebl-custom-img img {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+}
+.ebl-custom-text {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+.ebl-custom-title {
+    margin: 0 0 12px;
+    padding-top: 0 !important;
+    margin-top: 0 !important;
+    font-size: 1.3rem;
+    font-weight: 700;
+    font-family: Montserrat, sans-serif;
+    line-height: 1.2;
+    color: #111;
+    text-decoration: none;
+}
+.ebl-custom-desc {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #1f2937;
+    font-family: Montserrat, sans-serif;
+}
+.ebl-custom-desc p { margin: 0 0 12px; }
+.ebl-custom-desc p:last-child { margin-bottom: 0; }
+
+@media (max-width: 600px) {
+    .ebl-card--custom { flex-direction: column; }
+    .ebl-custom-img { flex: none; width: 100%; padding-top: 56.25%; }
+}
+
+/* Guide card: image fills full card, band overlaid at bottom */
+.ebl-card--guide {
+    position: relative;
+    /* Establish height same as offer card image ratio */
+    padding-top: calc(100% * 280 / 434);
+}
+/* Image fills the entire card */
+.ebl-card--guide .ebl-img {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: unset;
+    flex-shrink: 0;
+}
+.ebl-card--guide .ebl-img img {
+    object-position: center top;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    position: absolute;
+    top: 0; left: 0;
+}
+/* Band sits over the bottom of the image */
+.ebl-card--guide .ebl-band {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    flex: none;
+}
+.ebl-card--guide .ebl-title {
+    padding-top: 0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ebl-guide-link {
+    display: block;
+    text-align: right;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111 !important;
+    text-decoration: none !important;
+    font-family: Montserrat, sans-serif;
+    margin-top: 0.5rem;
+}
+
+/* Custom block link */
+.ebl-custom-link {
+    display: block;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(0,0,0,0.2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #111;
+    text-decoration: none;
+    font-family: Montserrat, sans-serif;
+}
+.ebl-custom-link:hover { text-decoration: underline; }
+
+/* Override theme prose styles inside grid */
+.ebl-custom-img img {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+.ebl-custom-title {
+    margin-block-end: 12px !important;
+}
+
+/* Placeholder */
+.ebl-placeholder {
+    padding: 2rem;
+    background: #f3f4f6;
+    border: 2px dashed #d1d5db;
+    text-align: center;
+    color: #6b7280;
+    font-family: Montserrat, sans-serif;
+    font-size: 0.9rem;
+}
