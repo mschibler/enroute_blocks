@@ -32,7 +32,16 @@ function enroute_render_featured_offer( array $attrs ): string {
             'post_type'   => 'offer',
             'post_status' => 'publish',
             'numberposts' => 1,
-            'meta_query'  => [[ 'key' => '_offer_featured', 'value' => $featured_num, 'compare' => '=' ]],
+            'meta_query'  => [
+                'relation' => 'AND',
+                [ 'key' => '_offer_featured', 'value' => $featured_num, 'compare' => '=' ],
+                // only active offers (never set = active)
+                [
+                    'relation' => 'OR',
+                    [ 'key' => '_offer_active', 'compare' => 'NOT EXISTS' ],
+                    [ 'key' => '_offer_active', 'value' => '0', 'compare' => '!=' ],
+                ],
+            ],
         ]);
         if ( $found ) $post_id = $found[0]->ID;
     }
@@ -40,6 +49,11 @@ function enroute_render_featured_offer( array $attrs ): string {
     if ( ! $post_id ) return ebl_placeholder( __( 'Select an offer', 'enroute_blocks' ) );
     $post = get_post( $post_id );
     if ( ! $post ) return '';
+
+    // Inactive offer: not shown on the front end (placeholder in the editor)
+    if ( get_post_meta( $post_id, '_offer_active', true ) === '0' ) {
+        return ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ? ebl_placeholder( __( 'This offer is inactive', 'enroute_blocks' ) ) : '';
+    }
 
     $title    = get_the_title( $post_id );
     $subtitle = get_post_meta( $post_id, '_offer_subtitle', true );
