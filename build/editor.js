@@ -217,6 +217,48 @@
         save: function() { return null; }
     });
 
+    // ── EVENT BLOCK ──────────────────────────────────────────────────────────
+    registerBlockType('enroute/featured-event', {
+        title: __('Featured Event', 'enroute_blocks'),
+        icon: 'calendar-alt',
+        category: 'enroute',
+        attributes: {
+            mode:       { type: 'string', default: 'next' },
+            postId:     { type: 'number', default: 0 },
+            colorIndex: { type: 'number', default: 1 },
+        },
+        edit: function(props) {
+            var attrs = props.attributes; var setAttrs = props.setAttributes;
+            var blockProps = useBlockProps({ className: 'enroute-editor-block' });
+            var color = getColor(attrs.colorIndex);
+            return el('div', blockProps,
+                el(InspectorControls, null,
+                    el(PanelBody, { title: __('Event', 'enroute_blocks') },
+                        el(SelectControl, {
+                            label: __('Selection', 'enroute_blocks'),
+                            value: attrs.mode,
+                            options: [
+                                { label: __('Next event', 'enroute_blocks'), value: 'next' },
+                                { label: __('Specific event', 'enroute_blocks'), value: 'specific' },
+                            ],
+                            onChange: function(v) { setAttrs({ mode: v }); }
+                        }),
+                        attrs.mode === 'specific' && el(PostSearch, { postType: 'event', value: attrs.postId, onChange: function(v) { setAttrs({ postId: v }); }, placeholder: __('Search events…', 'enroute_blocks') }),
+                        el(ColorPicker, { value: attrs.colorIndex, onChange: function(v) { setAttrs({ colorIndex: v }); } })
+                    )
+                ),
+                el('div', { style: { padding: '1rem', background: color, border: '2px solid #ccc', fontFamily: 'Montserrat,sans-serif' } },
+                    el('strong', null, '📅 ' + __('Featured Event', 'enroute_blocks')),
+                    el('span', { style: { marginLeft: '0.5rem', fontSize: '0.85rem' } },
+                        attrs.mode === 'next' ? __('Next event', 'enroute_blocks')
+                            : (attrs.postId ? 'ID: ' + attrs.postId : __('— Select in sidebar →', 'enroute_blocks'))
+                    )
+                )
+            );
+        },
+        save: function() { return null; }
+    });
+
     // ── BLOG BLOCK ───────────────────────────────────────────────────────────
     registerBlockType('enroute/featured-blog', {
         title: __('Featured Blog Post', 'enroute_blocks'),

@@ -52,7 +52,7 @@ add_action( 'wp_ajax_enroute_blocks_search', function() {
     check_ajax_referer( 'enroute_blocks_nonce', 'nonce' );
     $type    = sanitize_key( $_GET['post_type'] ?? 'post' );
     $search  = sanitize_text_field( $_GET['search'] ?? '' );
-    $allowed = [ 'post', 'offer', 'guide' ];
+    $allowed = [ 'post', 'offer', 'guide', 'event' ];
     if ( ! in_array( $type, $allowed, true ) ) wp_send_json_error();
 
     $posts = get_posts([

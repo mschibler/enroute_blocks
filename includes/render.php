@@ -258,11 +258,74 @@ function enroute_render_featured_custom( array $attrs ): string {
     <?php return ob_get_clean();
 }
 
+// ── EVENT BLOCK ───────────────────────────────────────────────────────────────
+// Next upcoming event of the current language (default) or a specific event.
+// Needs the Enroute Offers plugin (events, helpers).
+add_action( 'init', function() {
+    register_block_type( 'enroute/featured-event', [
+        'attributes' => [
+            'mode'       => [ 'type' => 'string', 'default' => 'next' ],
+            'postId'     => [ 'type' => 'number', 'default' => 0 ],
+            'colorIndex' => [ 'type' => 'number', 'default' => 1 ],
+        ],
+        'render_callback' => 'enroute_render_featured_event',
+    ] );
+} );
+
+function enroute_render_featured_event( array $attrs ): string {
+    $in_editor = defined( 'REST_REQUEST' ) && REST_REQUEST;
+    if ( ! function_exists( 'enroute_get_upcoming_events' ) ) {
+        return $in_editor ? ebl_placeholder( __( 'Enroute Offers plugin required', 'enroute_blocks' ) ) : '';
+    }
+
+    $mode  = $attrs['mode'] ?? 'next';
+    $color = enroute_blocks_get_color( (int) ( $attrs['colorIndex'] ?? 1 ) );
+
+    if ( $mode === 'specific' ) {
+        $post_id = (int) ( $attrs['postId'] ?? 0 );
+        if ( ! $post_id ) return $in_editor ? ebl_placeholder( __( 'Select an event', 'enroute_blocks' ) ) : '';
+        $event = get_post( $post_id );
+        if ( ! $event || $event->post_type !== 'event' || $event->post_status !== 'publish' ) return '';
+        // Inactive or over: not shown on the website
+        if ( ! enroute_event_is_active( $post_id ) || enroute_event_is_past( $post_id ) ) {
+            return $in_editor ? ebl_placeholder( __( 'This event is inactive or already over', 'enroute_blocks' ) ) : '';
+        }
+    } else {
+        $next = enroute_get_upcoming_events( '', 1 );
+        if ( ! $next ) return $in_editor ? ebl_placeholder( __( 'No upcoming events', 'enroute_blocks' ) ) : '';
+        $post_id = $next[0]->ID;
+    }
+
+    $url      = get_permalink( $post_id );
+    $img_url  = enroute_event_image_url( $post_id, 'large' );
+    $title    = get_the_title( $post_id );
+    $meta     = enroute_event_card_meta( $post_id );
+    $more_url = enroute_events_page_url();
+
+    ob_start(); ?>
+    <div class="ebl-card ebl-card--event">
+        <a href="<?php echo esc_url( $url ); ?>" class="ebl-img">
+            <?php if ( $img_url ) : ?>
+            <img src="<?php echo esc_url( $img_url ); ?>" alt="<?php echo esc_attr( $title ); ?>">
+            <?php endif; ?>
+        </a>
+        <div class="ebl-band" style="background:<?php echo esc_attr( $color ); ?>;">
+            <a href="<?php echo esc_url( $url ); ?>" class="ebl-title"><?php echo esc_html( $title ); ?></a>
+            <?php if ( $meta ) : ?><span class="ebl-subtitle"><?php echo esc_html( $meta ); ?></span><?php endif; ?>
+            <?php if ( $more_url ) : ?>
+            <a href="<?php echo esc_url( $more_url ); ?>" class="ebl-guide-link"><?php echo esc_html( enroute_events_more_link_text() ); ?></a>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php return ob_get_clean();
+}
+
 // ── Grid wrapper on front page ────────────────────────────────────────────────
 add_filter( 'the_content', function( string $content ): string {
     if ( ! is_front_page() ) return $content;
     if ( ! has_block( 'enroute/featured-offer' ) && ! has_block( 'enroute/featured-guide' ) &&
-         ! has_block( 'enroute/featured-blog' )  && ! has_block( 'enroute/featured-custom' ) ) return $content;
+         ! has_block( 'enroute/featured-blog' )  && ! has_block( 'enroute/featured-custom' ) &&
+         ! has_block( 'enroute/featured-event' ) ) return $content;
     return '<div class="ebl-grid">' . $content . '</div>';
 } );
 
