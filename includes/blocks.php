@@ -77,8 +77,11 @@ add_action( 'wp_ajax_enroute_blocks_search', function() {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 function enroute_get_default_color( int $n ): string {
-    $defaults = [ 1 => '#EBD84A', 2 => '#E8A030', 3 => '#C0392B', 4 => '#7BC67A', 5 => '#5B8DB8' ];
-    return $defaults[ $n ] ?? '#EBD84A';
+    // Same defaults as the offers plugin (Settings → General → Default colors)
+    $defaults = function_exists( 'enroute_get_default_colors' )
+        ? enroute_get_default_colors()
+        : [ 1 => '#C9D56B', 2 => '#F8ED84', 3 => '#E8AB58', 4 => '#D4735D', 5 => '#D0687B' ];
+    return $defaults[ $n ] ?? $defaults[1];
 }
 
 function enroute_blocks_get_color( int $index ): string {
