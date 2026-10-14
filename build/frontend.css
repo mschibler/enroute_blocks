@@ -359,3 +359,47 @@
     .ebl-slide-dots { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { .ebl-slide { transition: none; } }
+
+/* ── Logo carousel ─────────────────────────────────────────────────────────── */
+.ebl-logos {
+    width: 100%;
+    margin: 2.5rem 0 0;
+    padding: 1.75rem 0;
+    box-sizing: border-box;
+}
+.ebl-logos.has-lines { border-top: 1px solid #111; border-bottom: 1px solid #111; }
+.ebl-logos-viewport { overflow: hidden; width: 100%; }
+.ebl-logos-track {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    list-style: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: max-content;
+    min-width: 100%;
+}
+.ebl-logos.is-scrolling .ebl-logos-track {
+    justify-content: flex-start;
+    min-width: 0;
+    will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+    .ebl-logos.is-scrolling .ebl-logos-viewport { overflow-x: auto; }
+}
+.ebl-logo { flex: 0 0 auto; margin: 0 !important; padding: 0 !important; list-style: none !important; }
+.ebl-logo::before { content: none !important; }
+.ebl-logo a { display: block; line-height: 0; }
+.ebl-logo img {
+    display: block;
+    height: auto;
+    width: auto;
+    max-height: 5.5rem;
+    max-width: 11rem;
+    object-fit: contain;
+}
+@media (max-width: 600px) {
+    .ebl-logos-track { gap: 2rem; }
+    .ebl-logo img { max-height: 4rem; max-width: 8rem; }
+}

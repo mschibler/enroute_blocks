@@ -352,6 +352,48 @@
         save: function() { return null; }
     });
 
+    // ── LOGO CAROUSEL BLOCK ──────────────────────────────────────────────────
+    // The logos themselves are managed in the menu "Logos" (one place for all pages).
+    var ToggleControl = wp.components.ToggleControl;
+
+    registerBlockType('enroute/logo-carousel', {
+        title: __('Logo Carousel', 'enroute_blocks'),
+        icon: 'images-alt',
+        category: 'enroute',
+        attributes: {
+            lines: { type: 'boolean', default: true },
+            interval: { type: 'number', default: 3 },
+        },
+        edit: function(props) {
+            var attrs = props.attributes; var setAttrs = props.setAttributes;
+            var blockProps = useBlockProps({ className: 'enroute-editor-block enroute-editor-wide' });
+            var count = data.logoCount || 0;
+            return el('div', blockProps,
+                el(InspectorControls, null,
+                    el(PanelBody, { title: __('Logo Carousel', 'enroute_blocks') },
+                        el(ToggleControl, {
+                            label: __('Lines above and below', 'enroute_blocks'),
+                            checked: attrs.lines !== false, onChange: function(v) { setAttrs({ lines: v }); }
+                        }),
+                        el(TextControl, {
+                            label: __('Seconds per step', 'enroute_blocks'), type: 'number', min: 1, max: 20, step: 0.5,
+                            help: __('The logos move on one at a time. Only used when they do not fit in one row.', 'enroute_blocks'),
+                            value: attrs.interval, onChange: function(v) { setAttrs({ interval: Math.max(1, Math.min(20, parseFloat(v) || 3)) }); }
+                        })
+                    )
+                ),
+                el('div', { style: { borderTop: attrs.lines !== false ? '1px solid #111' : '2px dashed #ccc', borderBottom: attrs.lines !== false ? '1px solid #111' : '2px dashed #ccc', padding: '1.25rem 1rem', fontFamily: 'Montserrat,sans-serif', background: '#fafafa', textAlign: 'center' } },
+                    el('strong', { style: { display: 'block', marginBottom: '0.4rem' } }, '🏷 ' + __('Logo Carousel', 'enroute_blocks')),
+                    el('p', { style: { margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#555' } },
+                        count + ' ' + __('logos in total. On the website only the logos of the page language are shown, in the saved order.', 'enroute_blocks')
+                    ),
+                    el('a', { href: data.logosUrl, target: '_blank', rel: 'noopener', className: 'components-button is-secondary' }, __('Manage logos', 'enroute_blocks'))
+                )
+            );
+        },
+        save: function() { return null; }
+    });
+
     // ── BLOG BLOCK ───────────────────────────────────────────────────────────
     registerBlockType('enroute/featured-blog', {
         title: __('Featured Blog Post', 'enroute_blocks'),

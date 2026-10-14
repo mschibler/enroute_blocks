@@ -424,12 +424,123 @@ add_action( 'wp_footer', function() {
     </script>
 <?php }, 20 );
 
+// ── LOGO CAROUSEL BLOCK ───────────────────────────────────────────────────────
+// Shows the logos (menu "Logos") of the current language. If they fit in one
+// row they are shown centred; otherwise they move on one logo at a time
+// (endless loop, pause on hover). On the front page it is placed below the grid.
+add_action( 'init', function() {
+    register_block_type( 'enroute/logo-carousel', [
+        'attributes' => [
+            'lines'    => [ 'type' => 'boolean', 'default' => true ],
+            'interval' => [ 'type' => 'number',  'default' => 3 ], // seconds per step
+        ],
+        'render_callback' => 'enroute_render_logo_carousel',
+    ] );
+} );
+
+function enroute_render_logo_carousel( array $attrs ): string {
+    $in_editor = defined( 'REST_REQUEST' ) && REST_REQUEST;
+    $logos     = function_exists( 'ebl_get_logos' ) ? ebl_get_logos() : [];
+    if ( ! $logos ) return $in_editor ? ebl_placeholder( __( 'No logos for this language yet (menu "Logos")', 'enroute_blocks' ) ) : '';
+
+    $interval = max( 1, min( 20, (float) ( $attrs['interval'] ?? 3 ) ) );
+    $GLOBALS['ebl_logos_used'] = true;
+    $classes  = 'ebl-logos' . ( ! isset( $attrs['lines'] ) || $attrs['lines'] ? ' has-lines' : '' );
+
+    ob_start(); ?>
+    <!--ebl-logos-->
+    <div class="<?php echo esc_attr( $classes ); ?>" data-interval="<?php echo (int) round( $interval * 1000 ); ?>">
+        <div class="ebl-logos-viewport">
+            <ul class="ebl-logos-track">
+                <?php foreach ( $logos as $logo ) : ?>
+                <li class="ebl-logo">
+                    <?php if ( $logo['link'] ) : ?><a href="<?php echo esc_url( $logo['link'] ); ?>" target="_blank" rel="noopener" title="<?php echo esc_attr( $logo['name'] ); ?>"><?php endif; ?>
+                    <img src="<?php echo esc_url( $logo['img'] ); ?>" alt="<?php echo esc_attr( $logo['name'] ); ?>">
+                    <?php if ( $logo['link'] ) : ?></a><?php endif; ?>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
+    </div>
+    <!--/ebl-logos-->
+    <?php return ob_get_clean();
+}
+
+// Logo carousel behaviour: step by step, only when the logos don't fit; printed once in the footer
+add_action( 'wp_footer', function() {
+    if ( empty( $GLOBALS['ebl_logos_used'] ) ) return; ?>
+    <script>
+    (function () {
+        var boxes = document.querySelectorAll('.ebl-logos');
+        if (!boxes.length) return;
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var DURATION = 600; // ms for one step
+
+        function setup(box) {
+            var viewport = box.querySelector('.ebl-logos-viewport');
+            var track    = box.querySelector('.ebl-logos-track');
+            if (!track._orig) track._orig = Array.prototype.slice.call(track.children);
+            // reset: original order, no movement
+            if (box._timer) clearInterval(box._timer);
+            box._timer = null; box._busy = false;
+            track._orig.forEach(function (li) { track.appendChild(li); });
+            track.style.transition = 'none'; track.style.transform = '';
+            box.classList.remove('is-scrolling');
+            if (track.scrollWidth <= viewport.clientWidth + 1) return; // fits: static, centred
+            box.classList.add('is-scrolling');
+            if (reduce) return; // scrollable by swipe/scrollbar only, no automatic movement
+
+            function step() {
+                if (box._busy || box._paused) return;
+                var first = track.firstElementChild; if (!first) return;
+                var gap   = parseFloat(getComputedStyle(track).columnGap) || 0;
+                box._busy = true;
+                track.style.transition = 'transform ' + DURATION + 'ms ease-in-out';
+                track.style.transform  = 'translateX(' + -(first.offsetWidth + gap) + 'px)';
+                setTimeout(function () {
+                    track.style.transition = 'none';
+                    track.appendChild(first);           // first logo goes to the end
+                    track.style.transform = '';
+                    void track.offsetWidth;            // apply before the next step
+                    box._busy = false;
+                }, DURATION + 20);
+            }
+            var delay = Math.max(1000, parseInt(box.dataset.interval, 10) || 3000);
+            box._timer = setInterval(step, delay);
+        }
+        boxes.forEach(function (box) {
+            box.addEventListener('mouseenter', function () { box._paused = true; });
+            box.addEventListener('mouseleave', function () { box._paused = false; });
+            box.addEventListener('focusin',    function () { box._paused = true; });
+            box.addEventListener('focusout',   function () { box._paused = false; });
+        });
+
+        var t;
+        function all() { boxes.forEach(setup); }
+        // re-measure when a logo finishes loading late
+        boxes.forEach(function (box) {
+            box.querySelectorAll('img').forEach(function (img) {
+                if (!img.complete) img.addEventListener('load', function () { clearTimeout(t); t = setTimeout(all, 100); });
+            });
+        });
+        var lastW = window.innerWidth;
+        window.addEventListener('resize', function () {
+            if (window.innerWidth === lastW) return; lastW = window.innerWidth; // ignore mobile toolbar height changes
+            clearTimeout(t); t = setTimeout(all, 200);
+        });
+        // wait for the images so the widths are known
+        if (document.readyState === 'complete') all(); else window.addEventListener('load', all);
+    })();
+    </script>
+<?php }, 20 );
+
 // ── Grid wrapper on front page ────────────────────────────────────────────────
 add_filter( 'the_content', function( string $content ): string {
     if ( ! is_front_page() ) return $content;
     if ( ! has_block( 'enroute/featured-offer' ) && ! has_block( 'enroute/featured-guide' ) &&
          ! has_block( 'enroute/featured-blog' )  && ! has_block( 'enroute/featured-custom' ) &&
-         ! has_block( 'enroute/featured-event' ) && ! has_block( 'enroute/slideshow' ) ) return $content;
+         ! has_block( 'enroute/featured-event' ) && ! has_block( 'enroute/slideshow' ) &&
+         ! has_block( 'enroute/logo-carousel' ) ) return $content;
 
     // Slideshows go above the grid (not inside it)
     $top = '';
@@ -437,7 +548,14 @@ add_filter( 'the_content', function( string $content ): string {
         $top     = implode( '', $m[0] );
         $content = str_replace( $m[0], '', $content );
     }
-    return $top . '<div class="ebl-grid">' . $content . '</div>';
+    // Logo carousels go below the grid, full width
+    $bottom = '';
+    if ( preg_match_all( '#<!--ebl-logos-->.*?<!--/ebl-logos-->#s', $content, $m ) ) {
+        $bottom  = implode( '', $m[0] );
+        $content = str_replace( $m[0], '', $content );
+    }
+    $grid = trim( $content ) !== '' ? '<div class="ebl-grid">' . $content . '</div>' : '';
+    return $top . $grid . $bottom;
 } );
 
 // ── Block category ────────────────────────────────────────────────────────────
