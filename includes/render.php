@@ -140,8 +140,15 @@ function enroute_render_featured_guide( array $attrs ): string {
         if ( ! $img_url ) $img_url = wp_get_attachment_image_url( (int) $photo_id, 'large' ) ?: '';
     }
 
-    $link_text_translated = function_exists( 'pll__' ) ? pll__( $link_text ) : $link_text;
+    // Link text: the standard text is translated (Polylang / offers plugin); a custom text via Polylang
+    if ( ( $link_text === '' || $link_text === 'Zu den Guides' ) && function_exists( 'enroute_guides_link_text' ) ) {
+        $link_text_translated = enroute_guides_link_text();
+    } else {
+        $link_text_translated = function_exists( 'pll__' ) ? pll__( $link_text ) : $link_text;
+    }
+    // Link target: the guides page in the current language (Polylang translation of the page)
     if ( ! $link_url ) $link_url = get_option( 'enroute_guides_page_url', '' );
+    if ( $link_url && function_exists( 'enroute_translated_page_url' ) ) $link_url = enroute_translated_page_url( $link_url, 'enroute_guides_listing' );
     if ( ! $link_url ) $link_url = home_url( '/' ); // absolute fallback so card is always an <a>
 
     ob_start(); ?>
