@@ -259,6 +259,99 @@
         save: function() { return null; }
     });
 
+    // ── SLIDESHOW BLOCK ──────────────────────────────────────────────────────
+    // Each slide: title, text (WYSIWYG: bold, italic, link), link, colour, image.
+    var RichText = wp.blockEditor.RichText;
+
+    registerBlockType('enroute/slideshow', {
+        title: __('Slideshow', 'enroute_blocks'),
+        icon: 'images-alt2',
+        category: 'enroute',
+        attributes: {
+            slides:   { type: 'array', default: [] },
+            interval: { type: 'number', default: 6 },
+        },
+        edit: function(props) {
+            var attrs = props.attributes; var setAttrs = props.setAttributes;
+            var blockProps = useBlockProps({ className: 'enroute-editor-block enroute-editor-wide' });
+            var slides = attrs.slides || [];
+
+            function update(i, patch) {
+                var next = slides.map(function(s, j) { return j === i ? Object.assign({}, s, patch) : s; });
+                setAttrs({ slides: next });
+            }
+            function add() {
+                setAttrs({ slides: slides.concat([{ title: '', text: '', linkUrl: '', colorIndex: (slides.length % 5) + 1, imageId: 0, imageUrl: '' }]) });
+            }
+            function remove(i) {
+                if (!window.confirm(__('Delete this slide?', 'enroute_blocks'))) return;
+                setAttrs({ slides: slides.filter(function(s, j) { return j !== i; }) });
+            }
+            function move(i, d) {
+                var j = i + d; if (j < 0 || j >= slides.length) return;
+                var next = slides.slice(); var t = next[i]; next[i] = next[j]; next[j] = t;
+                setAttrs({ slides: next });
+            }
+            function pickImage(i) {
+                var frame = wp.media({ title: __('Select Image', 'enroute_blocks'), button: { text: __('Use this image', 'enroute_blocks') }, multiple: false });
+                frame.on('select', function() {
+                    var att = frame.state().get('selection').first().toJSON();
+                    update(i, { imageId: att.id, imageUrl: att.sizes && att.sizes.large ? att.sizes.large.url : att.url });
+                });
+                frame.open();
+            }
+
+            return el('div', blockProps,
+                el(InspectorControls, null,
+                    el(PanelBody, { title: __('Slideshow', 'enroute_blocks') },
+                        el(TextControl, {
+                            label: __('Seconds per slide', 'enroute_blocks'), type: 'number', min: 2, max: 30,
+                            value: attrs.interval, onChange: function(v) { setAttrs({ interval: Math.max(2, Math.min(30, parseInt(v, 10) || 6)) }); }
+                        })
+                    )
+                ),
+                el('div', { style: { border: '2px solid #ccc', padding: '1rem', fontFamily: 'Montserrat,sans-serif', background: '#fafafa' } },
+                    el('strong', { style: { display: 'block', marginBottom: '0.75rem' } }, '🖼 ' + __('Slideshow', 'enroute_blocks') + ' (' + slides.length + ')'),
+                    slides.map(function(s, i) {
+                        return el('div', { key: i, style: { display: 'flex', gap: '1rem', marginBottom: '1rem', background: '#fff', border: '1px solid #ddd' } },
+                            el('div', { style: { flex: '0 0 40%', padding: '0.75rem', background: getColor(s.colorIndex) } },
+                                el('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' } },
+                                    el('strong', null, __('Slide', 'enroute_blocks') + ' ' + (i + 1)),
+                                    el('span', null,
+                                        el(Button, { isSmall: true, icon: 'arrow-up-alt2', label: __('Move up', 'enroute_blocks'), disabled: i === 0, onClick: function() { move(i, -1); } }),
+                                        el(Button, { isSmall: true, icon: 'arrow-down-alt2', label: __('Move down', 'enroute_blocks'), disabled: i === slides.length - 1, onClick: function() { move(i, 1); } }),
+                                        el(Button, { isSmall: true, isDestructive: true, icon: 'trash', label: __('Delete', 'enroute_blocks'), onClick: function() { remove(i); } })
+                                    )
+                                ),
+                                el(TextControl, { label: __('Title', 'enroute_blocks'), value: s.title || '', onChange: function(v) { update(i, { title: v }); } }),
+                                el('p', { style: { margin: '0.5rem 0 0.25rem', fontSize: '11px', fontWeight: 500, textTransform: 'uppercase' } }, __('Text', 'enroute_blocks')),
+                                el(RichText, {
+                                    tagName: 'div', value: s.text || '', placeholder: __('Text…', 'enroute_blocks'),
+                                    allowedFormats: ['core/bold', 'core/italic', 'core/link'],
+                                    onChange: function(v) { update(i, { text: v }); },
+                                    style: { background: '#fff', padding: '0.5rem', minHeight: 90, fontSize: '0.85rem' }
+                                }),
+                                el(TextControl, { label: __('Link URL (optional)', 'enroute_blocks'), value: s.linkUrl || '', onChange: function(v) { update(i, { linkUrl: v }); }, style: { marginTop: '0.5rem' } }),
+                                el(ColorPicker, { value: s.colorIndex || 1, onChange: function(v) { update(i, { colorIndex: v }); } })
+                            ),
+                            el('div', { style: { flex: 1, padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' } },
+                                s.imageUrl
+                                    ? el('img', { src: s.imageUrl, style: { width: '100%', aspectRatio: '1264 / 690', objectFit: 'cover', display: 'block' } })
+                                    : el('div', { style: { width: '100%', aspectRatio: '1264 / 690', background: '#e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280' } }, __('No image', 'enroute_blocks')),
+                                el('div', null,
+                                    el(Button, { isSecondary: true, onClick: function() { pickImage(i); } }, s.imageId ? __('Change Image', 'enroute_blocks') : __('Select Image', 'enroute_blocks')),
+                                    s.imageId ? el(Button, { isLink: true, isDestructive: true, style: { marginLeft: '0.75rem' }, onClick: function() { update(i, { imageId: 0, imageUrl: '' }); } }, __('Remove', 'enroute_blocks')) : null
+                                )
+                            )
+                        );
+                    }),
+                    el(Button, { isPrimary: true, onClick: add }, '+ ' + __('Add slide', 'enroute_blocks'))
+                )
+            );
+        },
+        save: function() { return null; }
+    });
+
     // ── BLOG BLOCK ───────────────────────────────────────────────────────────
     registerBlockType('enroute/featured-blog', {
         title: __('Featured Blog Post', 'enroute_blocks'),

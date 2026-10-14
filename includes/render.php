@@ -327,13 +327,117 @@ function enroute_render_featured_event( array $attrs ): string {
     <?php return ob_get_clean();
 }
 
+// ── SLIDESHOW BLOCK ───────────────────────────────────────────────────────────
+// Slides: title, text (HTML), link, colour (default colours 1–5), image.
+// Shown above the grid (moved out of it in the grid wrapper below), so the
+// grid's equal row heights are not stretched to the slideshow's height.
+add_action( 'init', function() {
+    register_block_type( 'enroute/slideshow', [
+        'attributes' => [
+            'slides'   => [ 'type' => 'array', 'default' => [] ],
+            'interval' => [ 'type' => 'number', 'default' => 6 ],
+        ],
+        'render_callback' => 'enroute_render_slideshow',
+    ] );
+} );
+
+function enroute_render_slideshow( array $attrs ): string {
+    $in_editor = defined( 'REST_REQUEST' ) && REST_REQUEST;
+    $slides    = array_values( array_filter( (array) ( $attrs['slides'] ?? [] ), fn( $s ) => is_array( $s ) && ( ! empty( $s['title'] ) || ! empty( $s['text'] ) || ! empty( $s['imageId'] ) ) ) );
+    if ( ! $slides ) return $in_editor ? ebl_placeholder( __( 'Add slides in the block', 'enroute_blocks' ) ) : '';
+
+    $interval = max( 2, min( 30, (int) ( $attrs['interval'] ?? 6 ) ) );
+    $uid      = 'ebl-ss-' . wp_unique_id();
+
+    ob_start(); ?>
+    <!--ebl-slideshow-->
+    <div class="ebl-slideshow" id="<?php echo esc_attr( $uid ); ?>" data-interval="<?php echo (int) $interval * 1000; ?>" aria-roledescription="carousel">
+        <?php foreach ( $slides as $i => $s ) :
+            $color   = enroute_blocks_get_color( (int) ( $s['colorIndex'] ?? 1 ) );
+            $img_url = ! empty( $s['imageId'] ) ? ( wp_get_attachment_image_url( (int) $s['imageId'], 'full' ) ?: '' ) : '';
+            if ( ! $img_url && ! empty( $s['imageUrl'] ) ) $img_url = $s['imageUrl'];
+            $link    = trim( (string) ( $s['linkUrl'] ?? '' ) );
+            if ( $link && function_exists( 'enroute_normalize_url' ) ) $link = enroute_normalize_url( $link );
+            $title   = (string) ( $s['title'] ?? '' );
+        ?>
+        <div class="ebl-slide<?php echo $i === 0 ? ' is-active' : ''; ?>" aria-roledescription="slide" aria-label="<?php echo esc_attr( ( $i + 1 ) . ' / ' . count( $slides ) ); ?>"<?php echo $i === 0 ? '' : ' aria-hidden="true"'; ?>>
+            <div class="ebl-slide-text" style="background:<?php echo esc_attr( $color ); ?>;">
+                <div class="ebl-slide-inner">
+                    <?php if ( $title ) : ?>
+                    <h2 class="ebl-slide-title">
+                        <?php if ( $link ) : ?><a href="<?php echo esc_url( $link ); ?>"><?php echo esc_html( $title ); ?></a><?php else : echo esc_html( $title ); endif; ?>
+                    </h2>
+                    <?php endif; ?>
+                    <?php if ( ! empty( $s['text'] ) ) : ?>
+                    <div class="ebl-slide-body"><?php echo wp_kses_post( $s['text'] ); ?></div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="ebl-slide-img">
+                <?php if ( $img_url ) : ?>
+                    <?php if ( $link ) : ?><a href="<?php echo esc_url( $link ); ?>" tabindex="-1"><?php endif; ?>
+                    <img src="<?php echo esc_url( $img_url ); ?>" alt="<?php echo esc_attr( $title ); ?>"<?php echo $i === 0 ? '' : ' loading="lazy"'; ?>>
+                    <?php if ( $link ) : ?></a><?php endif; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+
+        <?php if ( count( $slides ) > 1 ) : ?>
+        <div class="ebl-slide-dots">
+            <?php foreach ( $slides as $i => $s ) : ?>
+            <button type="button" class="ebl-slide-dot<?php echo $i === 0 ? ' is-active' : ''; ?>" data-slide="<?php echo (int) $i; ?>" aria-label="<?php echo esc_attr( ( $i + 1 ) . ' / ' . count( $slides ) ); ?>"></button>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+    <!--/ebl-slideshow-->
+    <?php return ob_get_clean();
+}
+
+// Slideshow behaviour (autoplay, dots, pause on hover/focus); printed once in the footer
+add_action( 'wp_footer', function() {
+    if ( ! is_front_page() ) return; ?>
+    <script>
+    (function () {
+        document.querySelectorAll('.ebl-slideshow').forEach(function (show) {
+            var slides = show.querySelectorAll('.ebl-slide');
+            var dots   = show.querySelectorAll('.ebl-slide-dot');
+            if (slides.length < 2) return;
+            var current = 0, timer = null, delay = parseInt(show.dataset.interval, 10) || 6000;
+            var reduce  = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            function go(n) {
+                slides[current].classList.remove('is-active'); slides[current].setAttribute('aria-hidden', 'true');
+                if (dots[current]) dots[current].classList.remove('is-active');
+                current = (n + slides.length) % slides.length;
+                slides[current].classList.add('is-active'); slides[current].removeAttribute('aria-hidden');
+                if (dots[current]) dots[current].classList.add('is-active');
+            }
+            function start() { if (!reduce) { stop(); timer = setInterval(function () { go(current + 1); }, delay); } }
+            function stop()  { if (timer) clearInterval(timer); timer = null; }
+            dots.forEach(function (d) { d.addEventListener('click', function () { go(parseInt(d.dataset.slide, 10)); start(); }); });
+            show.addEventListener('mouseenter', stop);  show.addEventListener('mouseleave', start);
+            show.addEventListener('focusin', stop);     show.addEventListener('focusout', start);
+            start();
+        });
+    })();
+    </script>
+<?php }, 20 );
+
 // ── Grid wrapper on front page ────────────────────────────────────────────────
 add_filter( 'the_content', function( string $content ): string {
     if ( ! is_front_page() ) return $content;
     if ( ! has_block( 'enroute/featured-offer' ) && ! has_block( 'enroute/featured-guide' ) &&
          ! has_block( 'enroute/featured-blog' )  && ! has_block( 'enroute/featured-custom' ) &&
-         ! has_block( 'enroute/featured-event' ) ) return $content;
-    return '<div class="ebl-grid">' . $content . '</div>';
+         ! has_block( 'enroute/featured-event' ) && ! has_block( 'enroute/slideshow' ) ) return $content;
+
+    // Slideshows go above the grid (not inside it)
+    $top = '';
+    if ( preg_match_all( '#<!--ebl-slideshow-->.*?<!--/ebl-slideshow-->#s', $content, $m ) ) {
+        $top     = implode( '', $m[0] );
+        $content = str_replace( $m[0], '', $content );
+    }
+    return $top . '<div class="ebl-grid">' . $content . '</div>';
 } );
 
 // ── Block category ────────────────────────────────────────────────────────────
