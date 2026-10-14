@@ -385,7 +385,7 @@
                 el('div', { style: { borderTop: attrs.lines !== false ? '1px solid #111' : '2px dashed #ccc', borderBottom: attrs.lines !== false ? '1px solid #111' : '2px dashed #ccc', padding: '1.25rem 1rem', fontFamily: 'Montserrat,sans-serif', background: '#fafafa', textAlign: 'center' } },
                     el('strong', { style: { display: 'block', marginBottom: '0.4rem' } }, '🏷 ' + __('Logo Carousel', 'enroute_blocks')),
                     el('p', { style: { margin: '0 0 0.6rem', fontSize: '0.85rem', color: '#555' } },
-                        count + ' ' + __('logos in total. On the website only the logos of the page language are shown, in the saved order.', 'enroute_blocks')
+                        count + ' ' + __('active logos in total. On the website only the logos of the page language are shown, in the saved order.', 'enroute_blocks')
                     ),
                     el('a', { href: data.logosUrl, target: '_blank', rel: 'noopener', className: 'components-button is-secondary' }, __('Manage logos', 'enroute_blocks'))
                 )

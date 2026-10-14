@@ -44,7 +44,7 @@ add_action( 'enqueue_block_editor_assets', function() {
         'guidesUrl'    => $guides_url,
         'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
         'nonce'        => wp_create_nonce( 'enroute_blocks_nonce' ),
-        'logoCount'    => function_exists( 'ebl_get_logos' ) ? count( ebl_get_logos( 'all' ) ) : 0,
+        'logoCount'    => function_exists( 'ebl_get_logos' ) ? count( ebl_get_logos( 'all' ) ) : 0, // active logos
         'logosUrl'     => admin_url( 'edit.php?post_type=enroute_logo' ),
     ] );
 } );
