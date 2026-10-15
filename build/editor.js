@@ -57,6 +57,25 @@
     }
 
     // ── Post search ───────────────────────────────────────────────────────────
+    // "ID: 429 – Title" for a chosen post (titles fetched once and cached)
+    var TITLE_CACHE = {};
+    function PostLabel(props) {
+        var id = props.id, postType = props.postType;
+        var key = postType + ':' + id;
+        var st = useState(TITLE_CACHE[key] || ''); var title = st[0]; var setTitle = st[1];
+        useEffect(function() {
+            if (!id) return;
+            if (TITLE_CACHE[key] !== undefined) { setTitle(TITLE_CACHE[key]); return; }
+            fetch(data.ajaxUrl + '?action=enroute_blocks_search&nonce=' + data.nonce + '&post_type=' + postType + '&ids=' + id)
+                .then(function(r) { return r.json(); })
+                .then(function(d) {
+                    var t = d && d.success && d.data[0] ? d.data[0].title : '';
+                    TITLE_CACHE[key] = t; setTitle(t);
+                });
+        }, [key]);
+        return 'ID: ' + id + (title ? ' – ' + title : '');
+    }
+
     function PostSearch(props) {
         var postType = props.postType;
         var onChange = props.onChange;
@@ -68,7 +87,7 @@
 
         useEffect(function() {
             if (currentId && !s.selected) {
-                fetch(data.ajaxUrl + '?action=enroute_blocks_search&nonce=' + data.nonce + '&post_type=' + postType + '&search=')
+                fetch(data.ajaxUrl + '?action=enroute_blocks_search&nonce=' + data.nonce + '&post_type=' + postType + '&ids=' + currentId)
                     .then(function(r) { return r.json(); })
                     .then(function(d) {
                         if (d.success) {
@@ -166,7 +185,7 @@
                     el('span', { style: { marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666' } },
                         attrs.mode === 'featured'
                             ? (attrs.featuredNum ? 'Featured #' + attrs.featuredNum + (FEATURED_TITLES[attrs.featuredNum - 1] ? ' – ' + FEATURED_TITLES[attrs.featuredNum - 1] : '') : __('— Select slot →', 'enroute_blocks'))
-                            : (attrs.postId ? 'ID: ' + attrs.postId : __('— Select in sidebar →', 'enroute_blocks'))
+                            : (attrs.postId ? el(PostLabel, { id: attrs.postId, postType: 'offer' }) : __('— Select in sidebar →', 'enroute_blocks'))
                     )
                 )
             );
@@ -212,7 +231,7 @@
                 el('div', { style: { padding: '1rem', background: color, border: '2px solid #ccc', fontFamily: 'Montserrat,sans-serif' } },
                     el('strong', null, '👤 ' + __('Featured Guide', 'enroute_blocks')),
                     el('span', { style: { marginLeft: '0.5rem', fontSize: '0.85rem' } },
-                        attrs.mode === 'random' ? __('Random', 'enroute_blocks') : ('ID: ' + attrs.postId)
+                        attrs.mode === 'random' ? __('Random', 'enroute_blocks') : (attrs.postId ? el(PostLabel, { id: attrs.postId, postType: 'guide' }) : __('— Select in sidebar →', 'enroute_blocks'))
                     )
                 )
             );
@@ -254,7 +273,7 @@
                     el('strong', null, '📅 ' + __('Featured Event', 'enroute_blocks')),
                     el('span', { style: { marginLeft: '0.5rem', fontSize: '0.85rem' } },
                         attrs.mode === 'next' ? __('Next event', 'enroute_blocks')
-                            : (attrs.postId ? 'ID: ' + attrs.postId : __('— Select in sidebar →', 'enroute_blocks'))
+                            : (attrs.postId ? el(PostLabel, { id: attrs.postId, postType: 'event' }) : __('— Select in sidebar →', 'enroute_blocks'))
                     )
                 )
             );
@@ -432,7 +451,7 @@
                     el('span', { style: { marginLeft: '0.5rem', fontSize: '0.85rem', color: '#444' } },
                         attrs.mode === 'newest'
                             ? __('Newest post (auto)', 'enroute_blocks')
-                            : (attrs.postId ? 'ID: ' + attrs.postId : __('— Select in sidebar →', 'enroute_blocks'))
+                            : (attrs.postId ? el(PostLabel, { id: attrs.postId, postType: 'post' }) : __('— Select in sidebar →', 'enroute_blocks'))
                     )
                 )
             );
