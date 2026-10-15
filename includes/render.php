@@ -28,22 +28,11 @@ function enroute_render_featured_offer( array $attrs ): string {
     $mode         = $attrs['mode'] ?? 'specific';
 
     if ( $mode === 'featured' && $featured_num ) {
-        $found = get_posts([
-            'post_type'   => 'offer',
-            'post_status' => 'publish',
-            'numberposts' => 1,
-            'meta_query'  => [
-                'relation' => 'AND',
-                [ 'key' => '_offer_featured', 'value' => $featured_num, 'compare' => '=' ],
-                // only active offers (never set = active)
-                [
-                    'relation' => 'OR',
-                    [ 'key' => '_offer_active', 'compare' => 'NOT EXISTS' ],
-                    [ 'key' => '_offer_active', 'value' => '0', 'compare' => '!=' ],
-                ],
-            ],
-        ]);
-        if ( $found ) $post_id = $found[0]->ID;
+        // Position in the list Offers → Featured Angebote (published offers only; inactive handled below)
+        $found = function_exists( 'enroute_featured_offer_id' ) ? enroute_featured_offer_id( $featured_num ) : 0;
+        if ( $found && get_post_status( $found ) === 'publish' ) $post_id = $found;
+        elseif ( defined( 'REST_REQUEST' ) && REST_REQUEST ) return ebl_placeholder( sprintf( __( 'No published offer at Featured #%d', 'enroute_blocks' ), $featured_num ) );
+        else return '';
     }
 
     if ( ! $post_id ) return ebl_placeholder( __( 'Select an offer', 'enroute_blocks' ) );

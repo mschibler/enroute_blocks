@@ -44,6 +44,9 @@ add_action( 'enqueue_block_editor_assets', function() {
         'guidesUrl'    => $guides_url,
         'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
         'nonce'        => wp_create_nonce( 'enroute_blocks_nonce' ),
+        'featuredTitles' => function_exists( 'enroute_featured_offer_ids' ) ? array_map( function( $id ) {
+            return html_entity_decode( get_the_title( $id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+        }, array_slice( enroute_featured_offer_ids(), 0, 12 ) ) : [],
         'logoCount'    => function_exists( 'ebl_get_logos' ) ? count( ebl_get_logos( 'all' ) ) : 0, // active logos
         'logosUrl'     => admin_url( 'edit.php?post_type=enroute_logo' ),
     ] );

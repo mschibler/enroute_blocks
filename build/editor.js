@@ -123,7 +123,10 @@
 
     // ── OFFER BLOCK ──────────────────────────────────────────────────────────
     var FEATURED_OPTIONS = [{ label: __('— Select featured slot —', 'enroute_blocks'), value: '0' }];
-    for (var fi = 1; fi <= 12; fi++) { FEATURED_OPTIONS.push({ label: 'Featured #' + fi, value: String(fi) }); }
+    var FEATURED_TITLES = data.featuredTitles || [];
+    for (var fi = 1; fi <= 12; fi++) {
+        FEATURED_OPTIONS.push({ label: 'Featured #' + fi + (FEATURED_TITLES[fi - 1] ? ' – ' + FEATURED_TITLES[fi - 1] : ' – ' + __('(empty)', 'enroute_blocks')), value: String(fi) });
+    }
 
     registerBlockType('enroute/featured-offer', {
         title: __('Featured Offer', 'enroute_blocks'),
@@ -162,7 +165,7 @@
                     el('strong', null, '📋 ' + __('Featured Offer', 'enroute_blocks')),
                     el('span', { style: { marginLeft: '0.5rem', fontSize: '0.85rem', color: '#666' } },
                         attrs.mode === 'featured'
-                            ? (attrs.featuredNum ? 'Featured #' + attrs.featuredNum : __('— Select slot →', 'enroute_blocks'))
+                            ? (attrs.featuredNum ? 'Featured #' + attrs.featuredNum + (FEATURED_TITLES[attrs.featuredNum - 1] ? ' – ' + FEATURED_TITLES[attrs.featuredNum - 1] : '') : __('— Select slot →', 'enroute_blocks'))
                             : (attrs.postId ? 'ID: ' + attrs.postId : __('— Select in sidebar →', 'enroute_blocks'))
                     )
                 )
